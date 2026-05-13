@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Golf 2v2</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1c3a1c;
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    .screen { display: none; min-height: 100vh; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* ── SETUP ── */
+    #setup {
+      align-items: center;
+      justify-content: center;
+      padding: 24px 20px;
+    }
+
+    .logo { font-size: 48px; margin-bottom: 8px; }
+
+    h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; color: #d4f5a0; }
+
+    .subtitle { font-size: 14px; color: #8db87a; margin-bottom: 32px; }
+
+    .team-block {
+      width: 100%;
+      max-width: 360px;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .team-a-block { background: #2a5fa5; }
+    .team-b-block { background: #a53030; }
+
+    .team-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      opacity: 0.8;
+      margin-bottom: 12px;
+    }
+
+    .player-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .player-row:last-child { margin-bottom: 0; }
+
+    .player-icon { font-size: 20px; width: 32px; text-align: center; flex-shrink: 0; }
+
+    input[type="text"] {
+      flex: 1;
+      background: rgba(255,255,255,0.15);
+      border: none;
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #fff;
+      font-size: 16px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="text"]::placeholder { color: rgba(255,255,255,0.45); }
+    input[type="text"]:focus { background: rgba(255,255,255,0.25); }
+
+    .holes-row { display: flex; gap: 12px; margin-bottom: 28px; width: 100%; max-width: 360px; }
+
+    .hole-btn {
+      flex: 1;
+      padding: 14px;
+      border-radius: 12px;
+      border: 2px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .hole-btn.selected { background: #d4f5a0; color: #1c3a1c; border-color: #d4f5a0; }
+
+    .start-btn {
+      width: 100%;
+      max-width: 360px;
+      padding: 18px;
+      border-radius: 14px;
+      border: none;
+      background: #d4f5a0;
+      color: #1c3a1c;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .start-btn:active { opacity: 0.8; }
+
+    /* ── SCORECARD ── */
+    #scorecard { flex-direction: column; }
+
+    .sc-header { background: #0f2010; padding: 16px 20px 12px; }
+
+    .sc-course-name {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: #8db87a;
+      margin-bottom: 10px;
+    }
+
+    .sc-hole-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #8db87a;
+      margin-bottom: 4px;
+    }
+
+    .sc-hole-number { font-size: 30px; font-weight: 800; color: #d4f5a0; line-height: 1; margin-bottom: 14px; }
+
+    .totals-row { display: flex; gap: 10px; }
+
+    .total-card {
+      flex: 1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .total-card.team-a { background: #2a5fa5; }
+    .total-card.team-b { background: #a53030; }
+    .total-card.team-a.leading { background: #1e8a3c; }
+    .total-card.team-b.leading { background: #1e8a3c; }
+
+    .total-card-name { font-size: 13px; font-weight: 700; opacity: 0.85; }
+    .total-card-score { font-size: 26px; font-weight: 800; line-height: 1; }
+
+    .sc-body { flex: 1; padding: 20px 20px 10px; display: flex; flex-direction: column; gap: 14px; }
+
+    .team-section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      opacity: 0.55;
+      margin-bottom: -4px;
+    }
+
+    .player-score-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .player-score-row.team-a { border-left: 4px solid #4a8fd5; }
+    .player-score-row.team-b { border-left: 4px solid #d55050; }
+
+    .ps-name { flex: 1; font-size: 16px; font-weight: 600; }
+
+    .ps-controls { display: flex; align-items: center; gap: 0; }
+
+    .sc-btn {
+      width: 44px;
+      height: 44px;
+      border: none;
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      font-size: 22px;
+      font-weight: 300;
+      cursor: pointer;
+      border-radius: 0;
+      transition: background 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .sc-btn:first-child { border-radius: 10px 0 0 10px; }
+    .sc-btn:last-child { border-radius: 0 10px 10px 0; }
+    .sc-btn:active { background: rgba(255,255,255,0.28); }
+
+    .sc-score-display {
+      width: 52px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      background: rgba(255,255,255,0.12);
+      padding: 10px 0;
+      line-height: 1.2;
+    }
+
+    .nav-row { display: flex; gap: 12px; padding: 12px 20px 24px; }
+
+    .nav-btn {
+      flex: 1;
+      padding: 16px;
+      border-radius: 12px;
+      border: none;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav-btn:active { background: rgba(255,255,255,0.22); }
+    .nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .nav-btn.finish { background: #d4f5a0; color: #1c3a1c; }
+
+    .hole-dots { display: flex; justify-content: center; gap: 5px; padding: 0 20px 8px; flex-wrap: wrap; }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); transition: background 0.15s; }
+    .dot.filled { background: #d4f5a0; }
+    .dot.current { background: #fff; width: 10px; height: 10px; }
+
+    /* ── RESULTS ── */
+    #results { flex-direction: column; padding: 24px 20px; }
+
+    .winner-banner {
+      background: linear-gradient(135deg, #1e8a3c, #2aaa50);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .winner-emoji { font-size: 48px; margin-bottom: 8px; }
+    .winner-label { font-size: 13px; letter-spacing: 1.2px; opacity: 0.8; text-transform: uppercase; font-weight: 600; }
+    .winner-name { font-size: 28px; font-weight: 800; margin-top: 4px; color: #d4f5a0; }
+    .winner-score { font-size: 16px; margin-top: 6px; opacity: 0.85; }
+
+    .tie-banner {
+      background: linear-gradient(135deg, #555, #777);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .scorecard-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 14px; }
+
+    .scorecard-table th {
+      background: rgba(255,255,255,0.08);
+      padding: 8px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #8db87a;
+    }
+
+    .scorecard-table th:first-child { text-align: left; padding-left: 10px; }
+    .scorecard-table td { padding: 8px 6px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .scorecard-table td:first-child { text-align: left; padding-left: 10px; font-weight: 600; }
+    .scorecard-table tr:last-child td { border-bottom: none; }
+
+    .row-team-a { color: #7ab5f0; }
+    .row-team-b { color: #f07a7a; }
+
+    .total-row td {
+      background: rgba(255,255,255,0.06);
+      font-weight: 700;
+      font-size: 15px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+
+    .play-again-btn {
+      width: 100%;
+      padding: 18px;
+      border-radius: 14px;
+      border: none;
+      background: #d4f5a0;
+      color: #1c3a1c;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #8db87a;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup" class="screen active">
+  <div class="logo">⛳</div>
+  <h1>Golf 2v2</h1>
+  <p class="subtitle">Simple score tracker for you and your crew</p>
+
+  <div style="width:100%;max-width:360px;margin-bottom:14px;">
+    <input type="text" id="courseName" placeholder="Course name (optional)" maxlength="60" style="width:100%;background:rgba(255,255,255,0.1);border:none;border-radius:12px;padding:14px 16px;color:#fff;font-size:16px;outline:none;">
+  </div>
+
+  <div class="team-block team-a-block">
+    <div class="team-label">Team A</div>
+    <div class="player-row">
+      <div class="player-icon">🏌️</div>
+      <input type="text" id="p1" placeholder="Player 1" maxlength="16">
+    </div>
+    <div class="player-row">
+      <div class="player-icon">🏌️</div>
+      <input type="text" id="p2" placeholder="Player 2" maxlength="16">
+    </div>
+  </div>
+
+  <div class="team-block team-b-block">
+    <div class="team-label">Team B</div>
+    <div class="player-row">
+      <div class="player-icon">🏌️</div>
+      <input type="text" id="p3" placeholder="Player 3" maxlength="16">
+    </div>
+    <div class="player-row">
+      <div class="player-icon">🏌️</div>
+      <input type="text" id="p4" placeholder="Player 4" maxlength="16">
+    </div>
+  </div>
+
+  <div class="holes-row">
+    <button class="hole-btn selected" onclick="selectHoles(9, this)">9 Holes</button>
+    <button class="hole-btn" onclick="selectHoles(18, this)">18 Holes</button>
+  </div>
+
+  <button class="start-btn" onclick="startGame()">Start Round 🏌️</button>
+</div>
+
+<!-- SCORECARD -->
+<div id="scorecard" class="screen">
+  <div class="sc-header">
+    <div class="sc-course-name" id="scCourseName"></div>
+    <div class="sc-hole-label">Hole</div>
+    <div class="sc-hole-number" id="holeNum">1</div>
+    <div class="totals-row">
+      <div class="total-card team-a" id="totalA">
+        <span class="total-card-name" id="teamALabel">Team A</span>
+        <span class="total-card-score" id="totalAScore">0</span>
+      </div>
+      <div class="total-card team-b" id="totalB">
+        <span class="total-card-name" id="teamBLabel">Team B</span>
+        <span class="total-card-score" id="totalBScore">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sc-body">
+    <div class="team-section-label">Team A</div>
+    <div class="player-score-row team-a">
+      <span class="ps-name" id="sc-p1">Player 1</span>
+      <div class="ps-controls">
+        <button class="sc-btn" onclick="adjust(0, -1)">−</button>
+        <div class="sc-score-display" id="score-0">0</div>
+        <button class="sc-btn" onclick="adjust(0, 1)">+</button>
+      </div>
+    </div>
+    <div class="player-score-row team-a">
+      <span class="ps-name" id="sc-p2">Player 2</span>
+      <div class="ps-controls">
+        <button class="sc-btn" onclick="adjust(1, -1)">−</button>
+        <div class="sc-score-display" id="score-1">0</div>
+        <button class="sc-btn" onclick="adjust(1, 1)">+</button>
+      </div>
+    </div>
+
+    <div class="team-section-label" style="margin-top:4px">Team B</div>
+    <div class="player-score-row team-b">
+      <span class="ps-name" id="sc-p3">Player 3</span>
+      <div class="ps-controls">
+        <button class="sc-btn" onclick="adjust(2, -1)">−</button>
+        <div class="sc-score-display" id="score-2">0</div>
+        <button class="sc-btn" onclick="adjust(2, 1)">+</button>
+      </div>
+    </div>
+    <div class="player-score-row team-b">
+      <span class="ps-name" id="sc-p4">Player 4</span>
+      <div class="ps-controls">
+        <button class="sc-btn" onclick="adjust(3, -1)">−</button>
+        <div class="sc-score-display" id="score-3">0</div>
+        <button class="sc-btn" onclick="adjust(3, 1)">+</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="hole-dots" id="holeDots"></div>
+
+  <div class="nav-row">
+    <button class="nav-btn" id="prevBtn" onclick="prevHole()">← Back</button>
+    <button class="nav-btn" id="nextBtn" onclick="nextHole()">Next →</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results" class="screen">
+  <div id="winnerBanner"></div>
+  <p class="section-title">Full Scorecard</p>
+  <table class="scorecard-table">
+    <thead id="scHead"></thead>
+    <tbody id="scBody"></tbody>
+  </table>
+  <button class="play-again-btn" onclick="playAgain()">Play Again ⛳</button>
+</div>
+
+<script>
+  let totalHoles = 9;
+  let currentHole = 0;
+  let players = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
+  let courseName = '';
+  let scores = [];
+
+  function saveState(screen) {
+    localStorage.setItem('golf2v2', JSON.stringify({ totalHoles, currentHole, players, courseName, scores, screen }));
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem('golf2v2');
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (!s.scores || !s.players) return;
+      totalHoles = s.totalHoles;
+      currentHole = s.currentHole;
+      players = s.players;
+      courseName = s.courseName || '';
+      scores = s.scores;
+
+      if (s.screen === 'scorecard') {
+        document.getElementById('sc-p1').textContent = players[0];
+        document.getElementById('sc-p2').textContent = players[1];
+        document.getElementById('sc-p3').textContent = players[2];
+        document.getElementById('sc-p4').textContent = players[3];
+        document.getElementById('teamALabel').textContent = players[0].split(' ')[0] + ' & ' + players[1].split(' ')[0];
+        document.getElementById('teamBLabel').textContent = players[2].split(' ')[0] + ' & ' + players[3].split(' ')[0];
+        document.getElementById('scCourseName').textContent = courseName ? '⛳ ' + courseName : '';
+        buildDots();
+        renderHole();
+        showScreen('scorecard');
+      } else if (s.screen === 'results') {
+        showResults();
+      }
+    } catch (e) {}
+  }
+
+  window.addEventListener('load', loadState);
+
+  function selectHoles(n, btn) {
+    totalHoles = n;
+    document.querySelectorAll('.hole-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  function startGame() {
+    const names = ['p1','p2','p3','p4'].map(id => {
+      const val = document.getElementById(id).value.trim();
+      return val || document.getElementById(id).placeholder;
+    });
+    players = names;
+    courseName = document.getElementById('courseName').value.trim();
+
+    const scCourse = document.getElementById('scCourseName');
+    scCourse.textContent = courseName ? '⛳ ' + courseName : '';
+
+    scores = Array.from({ length: totalHoles }, () => [0, 0, 0, 0]);
+    currentHole = 0;
+
+    document.getElementById('sc-p1').textContent = players[0];
+    document.getElementById('sc-p2').textContent = players[1];
+    document.getElementById('sc-p3').textContent = players[2];
+    document.getElementById('sc-p4').textContent = players[3];
+    document.getElementById('teamALabel').textContent = players[0].split(' ')[0] + ' & ' + players[1].split(' ')[0];
+    document.getElementById('teamBLabel').textContent = players[2].split(' ')[0] + ' & ' + players[3].split(' ')[0];
+
+    buildDots();
+    renderHole();
+    showScreen('scorecard');
+    saveState('scorecard');
+  }
+
+  function buildDots() {
+    const container = document.getElementById('holeDots');
+    container.innerHTML = '';
+    for (let i = 0; i < totalHoles; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot';
+      d.id = 'dot-' + i;
+      container.appendChild(d);
+    }
+  }
+
+  function renderHole() {
+    document.getElementById('holeNum').textContent = currentHole + 1;
+
+    for (let p = 0; p < 4; p++) {
+      document.getElementById('score-' + p).textContent = scores[currentHole][p];
+    }
+
+    // totals (best ball: lowest score of each team per hole)
+    let tA = 0, tB = 0;
+    for (let h = 0; h < totalHoles; h++) {
+      tA += bestBall(scores[h][0], scores[h][1]);
+      tB += bestBall(scores[h][2], scores[h][3]);
+    }
+    document.getElementById('totalAScore').textContent = tA;
+    document.getElementById('totalBScore').textContent = tB;
+
+    // leading highlight (lower is better in golf)
+    const cardA = document.getElementById('totalA');
+    const cardB = document.getElementById('totalB');
+    cardA.classList.remove('leading');
+    cardB.classList.remove('leading');
+    if (tA > 0 || tB > 0) {
+      if (tA < tB) cardA.classList.add('leading');
+      else if (tB < tA) cardB.classList.add('leading');
+    }
+
+    // dots
+    for (let i = 0; i < totalHoles; i++) {
+      const dot = document.getElementById('dot-' + i);
+      dot.className = 'dot';
+      const holeScored = scores[i].some(s => s > 0);
+      if (i === currentHole) dot.classList.add('current');
+      else if (holeScored) dot.classList.add('filled');
+    }
+
+    document.getElementById('prevBtn').disabled = currentHole === 0;
+    const nextBtn = document.getElementById('nextBtn');
+    if (currentHole === totalHoles - 1) {
+      nextBtn.textContent = 'Finish 🏁';
+      nextBtn.className = 'nav-btn finish';
+    } else {
+      nextBtn.textContent = 'Next →';
+      nextBtn.className = 'nav-btn';
+    }
+  }
+
+  function adjust(playerIndex, delta) {
+    const newVal = scores[currentHole][playerIndex] + delta;
+    if (newVal < 0) return;
+    scores[currentHole][playerIndex] = newVal;
+    renderHole();
+    saveState('scorecard');
+  }
+
+  function prevHole() {
+    if (currentHole > 0) { currentHole--; renderHole(); saveState('scorecard'); }
+  }
+
+  function nextHole() {
+    if (currentHole < totalHoles - 1) { currentHole++; renderHole(); saveState('scorecard'); }
+    else showResults();
+  }
+
+  function bestBall(s1, s2) {
+    if (s1 === 0 && s2 === 0) return 0;
+    if (s1 === 0) return s2;
+    if (s2 === 0) return s1;
+    return Math.min(s1, s2);
+  }
+
+  function showResults() {
+    let tA = 0, tB = 0;
+    for (let h = 0; h < totalHoles; h++) {
+      tA += bestBall(scores[h][0], scores[h][1]);
+      tB += bestBall(scores[h][2], scores[h][3]);
+    }
+
+    const teamAName = players[0].split(' ')[0] + ' & ' + players[1].split(' ')[0];
+    const teamBName = players[2].split(' ')[0] + ' & ' + players[3].split(' ')[0];
+    const courseTag = courseName ? `<div style="font-size:13px;opacity:0.7;margin-bottom:6px;">@ ${escHtml(courseName)}</div>` : '';
+
+    let bannerHTML;
+    if (tA < tB) {
+      bannerHTML = `<div class="winner-banner">
+        <div class="winner-emoji">🏆</div>
+        ${courseTag}
+        <div class="winner-label">Winners</div>
+        <div class="winner-name">${escHtml(teamAName)}</div>
+        <div class="winner-score">${tA} vs ${tB} strokes</div>
+      </div>`;
+    } else if (tB < tA) {
+      bannerHTML = `<div class="winner-banner">
+        <div class="winner-emoji">🏆</div>
+        ${courseTag}
+        <div class="winner-label">Winners</div>
+        <div class="winner-name">${escHtml(teamBName)}</div>
+        <div class="winner-score">${tB} vs ${tA} strokes</div>
+      </div>`;
+    } else {
+      bannerHTML = `<div class="tie-banner">
+        <div class="winner-emoji">🤝</div>
+        ${courseTag}
+        <div class="winner-label">It's a Tie!</div>
+        <div class="winner-name">${tA} strokes each</div>
+      </div>`;
+    }
+    document.getElementById('winnerBanner').innerHTML = bannerHTML;
+
+    // Table header
+    const holes = Array.from({length: totalHoles}, (_, i) => i + 1);
+    document.getElementById('scHead').innerHTML = `<tr>
+      <th>Player</th>
+      ${holes.map(h => `<th>${h}</th>`).join('')}
+      <th>Total</th>
+    </tr>`;
+
+    // Individual player rows
+    const rows = players.map((name, pi) => {
+      const teamClass = pi < 2 ? 'row-team-a' : 'row-team-b';
+      const total = scores.reduce((sum, h) => sum + h[pi], 0);
+      const cells = scores.map(h => `<td>${h[pi] || '—'}</td>`).join('');
+      return `<tr class="${teamClass}"><td>${escHtml(name)}</td>${cells}<td><strong>${total}</strong></td></tr>`;
+    });
+
+    // Team best ball total rows
+    const teamATotal = scores.reduce((sum, h) => sum + bestBall(h[0], h[1]), 0);
+    const teamBTotal = scores.reduce((sum, h) => sum + bestBall(h[2], h[3]), 0);
+    const teamACells = scores.map(h => { const b = bestBall(h[0],h[1]); return `<td>${b||'—'}</td>`; }).join('');
+    const teamBCells = scores.map(h => { const b = bestBall(h[2],h[3]); return `<td>${b||'—'}</td>`; }).join('');
+
+    document.getElementById('scBody').innerHTML = rows.join('') + `
+      <tr class="total-row row-team-a">
+        <td>${escHtml(teamAName)}</td>${teamACells}<td>${teamATotal}</td>
+      </tr>
+      <tr class="total-row row-team-b">
+        <td>${escHtml(teamBName)}</td>${teamBCells}<td>${teamBTotal}</td>
+      </tr>`;
+
+    showScreen('results');
+    saveState('results');
+  }
+
+  function playAgain() {
+    localStorage.removeItem('golf2v2');
+    showScreen('setup');
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
