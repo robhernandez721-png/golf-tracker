@@ -271,6 +271,16 @@
     .row-team-a { color: #7ab5f0; }
     .row-team-b { color: #f07a7a; }
 
+    .used-score { color: #d4f5a0 !important; font-weight: 700; }
+
+    .contrib-count {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: #8db87a;
+      margin-top: 2px;
+    }
+
     .total-row td {
       background: rgba(255,255,255,0.06);
       font-weight: 700;
@@ -622,12 +632,29 @@
       <th>Total</th>
     </tr>`;
 
-    // Individual player rows
+    // Count how many holes each player's score was used as best ball
+    const contrib = [0, 0, 0, 0];
+    for (let h = 0; h < totalHoles; h++) {
+      const bestA = bestBall(scores[h][0], scores[h][1]);
+      const bestB = bestBall(scores[h][2], scores[h][3]);
+      if (scores[h][0] > 0 && scores[h][0] === bestA) contrib[0]++;
+      if (scores[h][1] > 0 && scores[h][1] === bestA) contrib[1]++;
+      if (scores[h][2] > 0 && scores[h][2] === bestB) contrib[2]++;
+      if (scores[h][3] > 0 && scores[h][3] === bestB) contrib[3]++;
+    }
+
+    // Individual player rows — highlight cells where their score was used
     const rows = players.map((name, pi) => {
       const teamClass = pi < 2 ? 'row-team-a' : 'row-team-b';
       const total = scores.reduce((sum, h) => sum + h[pi], 0);
-      const cells = scores.map(h => `<td>${h[pi] || '—'}</td>`).join('');
-      return `<tr class="${teamClass}"><td>${escHtml(name)}</td>${cells}<td><strong>${total}</strong></td></tr>`;
+      const cells = scores.map((h, hi) => {
+        const partner = pi % 2 === 0 ? pi + 1 : pi - 1;
+        const best = bestBall(h[pi], h[partner]);
+        const used = h[pi] > 0 && h[pi] === best;
+        return `<td class="${used ? 'used-score' : ''}">${h[pi] || '—'}</td>`;
+      }).join('');
+      const holeWord = contrib[pi] === 1 ? 'hole' : 'holes';
+      return `<tr class="${teamClass}"><td>${escHtml(name)}</td>${cells}<td><strong>${total}</strong><div class="contrib-count">${contrib[pi]} ${holeWord}</div></td></tr>`;
     });
 
     // Team best ball total rows
